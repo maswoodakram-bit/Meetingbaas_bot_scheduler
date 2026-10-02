@@ -1,0 +1,63 @@
+name: Schedule Saturday Bots
+ 
+on:
+  schedule:
+    - cron: '40 12 * * 6'  # Every Saturday at 12:40 PM (12:40 UTC)
+ 
+jobs:
+  create-bots:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Bot 1
+        run: |
+          curl -X POST "https://api.meetingbaas.com/v2/bots" \
+            -H "Content-Type: application/json" \
+            -H "x-meeting-baas-api-key: ${{ secrets.MEETINGBAAS_API_KEY }}" \
+            -d '{
+              "meeting_url": "${{ secrets.SATURDAY_MEETING_URL }}",
+              "bot_name": "23 Maswood Akram",
+              "recording_mode": "audio_only",
+              "transcription_enabled": false,
+              "timeout_config": {
+                "waiting_room_timeout": 1800,
+                "no_one_joined_timeout": 1800,
+                "silence_timeout": 3600,
+                "max_recording_duration": 43200
+              }
+            }'
+      
+      - name: Create Bot 2
+        run: |
+          curl -X POST "https://api.meetingbaas.com/v2/bots" \
+            -H "Content-Type: application/json" \
+            -H "x-meeting-baas-api-key: ${{ secrets.MEETINGBAAS_API_KEY }}" \
+            -d '{
+              "meeting_url": "${{ secrets.SATURDAY_MEETING_URL }}",
+              "bot_name": "23 Naeem Kodaganur",
+              "recording_mode": "audio_only",
+              "transcription_enabled": false,
+              "timeout_config": {
+                "waiting_room_timeout": 1800,
+                "no_one_joined_timeout": 1800,
+                "silence_timeout": 3600,
+                "max_recording_duration": 43200
+              }
+            }'
+      
+      - name: Create Bot 3
+        run: |
+          curl -X POST "https://api.meetingbaas.com/v2/bots" \
+            -H "Content-Type: application/json" \
+            -H "x-meeting-baas-api-key: ${{ secrets.MEETINGBAAS_API_KEY }}" \
+            -d '{
+              "meeting_url": "${{ secrets.SATURDAY_MEETING_URL }}",
+              "bot_name": "23 Muhammed Zainuddin",
+              "recording_mode": "audio_only",
+              "transcription_enabled": false,
+              "timeout_config": {
+                "waiting_room_timeout": 1800,
+                "no_one_joined_timeout": 1800,
+                "silence_timeout": 3600,
+                "max_recording_duration": 43200
+              }
+            }'
