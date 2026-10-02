@@ -19,10 +19,10 @@ jobs:
               "recording_mode": "audio_only",
               "transcription_enabled": false,
               "timeout_config": {
-                "waiting_room_timeout": 86400,
-                "no_one_joined_timeout": 86400,
-                "silence_timeout": 86400,
-                "max_recording_duration": 86400
+                "waiting_room_timeout": 1800,
+                "no_one_joined_timeout": 1800,
+                "silence_timeout": 3600,
+                "max_recording_duration": 43200
               }
             }'
       
@@ -37,10 +37,10 @@ jobs:
               "recording_mode": "audio_only",
               "transcription_enabled": false,
               "timeout_config": {
-                "waiting_room_timeout": 86400,
-                "no_one_joined_timeout": 86400,
-                "silence_timeout": 86400,
-                "max_recording_duration": 86400
+                "waiting_room_timeout": 1800,
+                "no_one_joined_timeout": 1800,
+                "silence_timeout": 3600,
+                "max_recording_duration": 43200
               }
             }'
       
@@ -55,9 +55,9 @@ jobs:
               "recording_mode": "audio_only",
               "transcription_enabled": false,
               "timeout_config": {
-                "waiting_room_timeout": 86400,
-                "no_one_joined_timeout": 86400,
-                "silence_timeout": 86400,
-                "max_recording_duration": 86400
+                "waiting_room_timeout": 1800,
+                "no_one_joined_timeout": 1800,
+                "silence_timeout": 3600,
+                "max_recording_duration": 43200
               }
             }'
