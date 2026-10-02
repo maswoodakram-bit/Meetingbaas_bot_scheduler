@@ -1,0 +1,26 @@
+name: Test Bot Now
+ 
+on:
+  workflow_dispatch
+ 
+jobs:
+  create-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Bot
+        run: |
+          curl -X POST "https://api.meetingbaas.com/v2/bots" \
+            -H "Content-Type: application/json" \
+            -H "x-meeting-baas-api-key: ${{ secrets.MEETINGBAAS_API_KEY }}" \
+            -d '{
+              "meeting_url": "${{ secrets.MEETING_URL }}",
+              "bot_name": "Silent Bot",
+              "recording_mode": "audio_only",
+              "transcription_enabled": false,
+              "timeout_config": {
+                "waiting_room_timeout": 1800,
+                "no_one_joined_timeout": 1800,
+                "silence_timeout": 3600,
+                "max_recording_duration": 43200
+              }
+            }'
