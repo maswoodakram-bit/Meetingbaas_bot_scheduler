@@ -9,11 +9,11 @@ jobs:
     steps:
       - name: Create Bot
         run: |
-          curl -X POST "https://api.meetingbaas.com/v2/bots" \
+          curl -X POST "https://ap-northeast-1.recall.ai/api/v1/bot" \
             -H "Content-Type: application/json" \
-            -H "x-meeting-baas-api-key: ${{ secrets.MEETINGBAAS_API_KEY }}" \
+            -H "x-meeting-baas-api-key: ${{ secrets.TESTAPI }}" \
             -d '{
-              "meeting_url": "${{ secrets.MEETING_URL }}",
+              "meeting_url": "${{ secrets.TESTURL }}",
               "bot_name": "Silent Bot",
               "recording_mode": "audio_only",
               "transcription_enabled": false,
