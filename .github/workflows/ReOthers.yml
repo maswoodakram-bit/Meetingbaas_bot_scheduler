@@ -1,7 +1,19 @@
-name: Test Recall Bots
+name: Schedule Multiple Recall Bots Weekly
 
 on:
+  schedule:
+    - cron: '0 9 * * 2'   # Tuesday, 3:00 PM Osh time
+    - cron: '40 6 * * 6'  # Saturday, 12:40 PM Osh time
+
   workflow_dispatch:
+    inputs:
+      meeting_day:
+        description: "Which meeting should the bots join?"
+        required: true
+        type: choice
+        options:
+          - Tuesday
+          - Saturday
 
 jobs:
   create-bots:
@@ -11,24 +23,47 @@ jobs:
       - name: Create Meeting Bots
         env:
           RECALLAI_API_KEY: ${{ secrets.RECALLAI_API_KEY }}
-          MEETING_URL: ${{ secrets.TESTURL }}
+          TUESDAY_MEETING_URL: ${{ secrets.MEETING_URL }}
+          SATURDAY_MEETING_URL: ${{ secrets.SATURDAY_MEETING_URL }}
+          EVENT_NAME: ${{ github.event_name }}
+          MEETING_DAY: ${{ inputs.meeting_day }}
 
         run: |
           set -euo pipefail
 
-          echo "Checking configuration..."
-
           if [[ -z "$RECALLAI_API_KEY" ]]; then
-            echo "ERROR: RECALLAI_API_KEY is missing."
+            echo "ERROR: RECALLAI_API_KEY secret is missing."
+            exit 1
+          fi
+
+          # Select the correct meeting URL.
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            SELECTED_DAY="$MEETING_DAY"
+          elif [[ "$(date -u +%u)" == "2" ]]; then
+            SELECTED_DAY="Tuesday"
+          elif [[ "$(date -u +%u)" == "6" ]]; then
+            SELECTED_DAY="Saturday"
+          else
+            echo "ERROR: Unexpected scheduled day."
+            echo "For manual runs, select Tuesday or Saturday."
+            exit 1
+          fi
+
+          if [[ "$SELECTED_DAY" == "Tuesday" ]]; then
+            MEETING_URL="$TUESDAY_MEETING_URL"
+          elif [[ "$SELECTED_DAY" == "Saturday" ]]; then
+            MEETING_URL="$SATURDAY_MEETING_URL"
+          else
+            echo "ERROR: Invalid meeting day selected."
             exit 1
           fi
 
           if [[ -z "$MEETING_URL" ]]; then
-            echo "ERROR: TESTURL is missing or empty."
+            echo "ERROR: Meeting URL secret is missing."
             exit 1
           fi
 
-          echo "Both secrets are present."
+          echo "Selected meeting schedule: $SELECTED_DAY"
 
           BOT_NAMES=(
             "22 Shahul"
@@ -63,19 +98,17 @@ jobs:
               --header "Content-Type: application/json" \
               --header "Accept: application/json" \
               --data @request.json) || {
-                echo "ERROR: The HTTP request failed."
+                echo "ERROR: HTTP request failed."
                 exit 1
               }
 
             echo "HTTP status: $HTTP_CODE"
-            echo "API response:"
-
-            jq . response.json 2>/dev/null || cat response.json
 
             if [[ "$HTTP_CODE" != "201" ]]; then
-              echo "ERROR: Recall.ai did not return HTTP 201."
+              echo "ERROR: Bot creation failed."
+              jq . response.json 2>/dev/null || cat response.json
               exit 1
             fi
 
-            echo "Bot creation succeeded: $BOT_NAME"
+            echo "Bot created successfully: $BOT_NAME"
           done
