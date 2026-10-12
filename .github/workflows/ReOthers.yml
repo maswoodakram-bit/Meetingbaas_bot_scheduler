@@ -1,9 +1,6 @@
-name: Schedule Multiple Recall Bots Weekly
+name: Test Recall Bots
 
 on:
-  schedule:
-    - cron: '0 9 * * 2'  # Every Tuesday at 9:00 AM UTC
-
   workflow_dispatch:
 
 jobs:
@@ -19,24 +16,27 @@ jobs:
         run: |
           set -euo pipefail
 
+          echo "Checking configuration..."
+
           if [[ -z "$RECALLAI_API_KEY" ]]; then
-            echo "ERROR: RECALLAI_API_KEY secret is missing."
+            echo "ERROR: RECALLAI_API_KEY is missing."
             exit 1
           fi
 
           if [[ -z "$MEETING_URL" ]]; then
-            echo "ERROR: MEETING_URL secret is missing."
+            echo "ERROR: TEST_URL is missing or empty."
             exit 1
           fi
+
+          echo "Both secrets are present."
 
           BOT_NAMES=(
             "22 Shahul"
             "23 Haseeb"
-            
           )
 
           for BOT_NAME in "${BOT_NAMES[@]}"; do
-            echo "Creating: $BOT_NAME"
+            echo "Creating bot: $BOT_NAME"
 
             jq -n \
               --arg meeting_url "$MEETING_URL" \
@@ -50,15 +50,32 @@ jobs:
                   noone_joined_timeout: 1800,
                   in_call_not_recording_timeout: 14400
                 }
-              }' |
-            curl --fail-with-body --silent --show-error \
-              -X POST \
-              "https://us-west-2.recall.ai/api/v1/bot/" \
-              -H "Authorization: Token $RECALLAI_API_KEY" \
-              -H "Content-Type: application/json" \
-              -H "Accept: application/json" \
-              -d @-
+              }' > request.json
 
-            echo ""
-            echo "Creation request completed for: $BOT_NAME"
+            HTTP_CODE=$(curl \
+              --silent \
+              --show-error \
+              --output response.json \
+              --write-out "%{http_code}" \
+              --request POST \
+              "https://us-west-2.recall.ai/api/v1/bot/" \
+              --header "Authorization: Token $RECALLAI_API_KEY" \
+              --header "Content-Type: application/json" \
+              --header "Accept: application/json" \
+              --data @request.json) || {
+                echo "ERROR: The HTTP request failed."
+                exit 1
+              }
+
+            echo "HTTP status: $HTTP_CODE"
+            echo "API response:"
+
+            jq . response.json 2>/dev/null || cat response.json
+
+            if [[ "$HTTP_CODE" != "201" ]]; then
+              echo "ERROR: Recall.ai did not return HTTP 201."
+              exit 1
+            fi
+
+            echo "Bot creation succeeded: $BOT_NAME"
           done
