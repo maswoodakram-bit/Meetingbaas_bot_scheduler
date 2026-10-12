@@ -1,0 +1,64 @@
+name: Schedule Multiple Recall Bots Weekly
+
+on:
+  schedule:
+    - cron: '0 9 * * 2'  # Every Tuesday at 9:00 AM UTC
+
+  workflow_dispatch:
+
+jobs:
+  create-bots:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create Meeting Bots
+        env:
+          RECALLAI_API_KEY: ${{ secrets.RECALLAI_API_KEY }}
+          MEETING_URL: ${{ secrets.MEETING_URL }}
+
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$RECALLAI_API_KEY" ]]; then
+            echo "ERROR: RECALLAI_API_KEY secret is missing."
+            exit 1
+          fi
+
+          if [[ -z "$MEETING_URL" ]]; then
+            echo "ERROR: MEETING_URL secret is missing."
+            exit 1
+          fi
+
+          BOT_NAMES=(
+            "22 Shahul"
+            "23 Haseeb"
+            
+          )
+
+          for BOT_NAME in "${BOT_NAMES[@]}"; do
+            echo "Creating: $BOT_NAME"
+
+            jq -n \
+              --arg meeting_url "$MEETING_URL" \
+              --arg bot_name "$BOT_NAME" \
+              '{
+                meeting_url: $meeting_url,
+                bot_name: $bot_name,
+                recording_config: null,
+                automatic_leave: {
+                  waiting_room_timeout: 1800,
+                  noone_joined_timeout: 1800,
+                  in_call_not_recording_timeout: 14400
+                }
+              }' |
+            curl --fail-with-body --silent --show-error \
+              -X POST \
+              "https://ap-northeast-1.recall.ai/api/v1/bot/" \
+              -H "Authorization: Token $RECALLAI_API_KEY" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -d @-
+
+            echo ""
+            echo "Creation request completed for: $BOT_NAME"
+          done
