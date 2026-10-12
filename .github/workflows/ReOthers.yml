@@ -11,7 +11,7 @@ jobs:
       - name: Create Meeting Bots
         env:
           RECALLAI_API_KEY: ${{ secrets.RECALLAI_API_KEY }}
-          MEETING_URL: ${{ secrets.TEST_URL }}
+          MEETING_URL: ${{ secrets.TESTURL }}
 
         run: |
           set -euo pipefail
@@ -24,7 +24,7 @@ jobs:
           fi
 
           if [[ -z "$MEETING_URL" ]]; then
-            echo "ERROR: TEST_URL is missing or empty."
+            echo "ERROR: TESTURL is missing or empty."
             exit 1
           fi
 
