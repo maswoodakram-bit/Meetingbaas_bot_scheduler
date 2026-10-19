@@ -1,4 +1,4 @@
-name: Schedule Multiple Meeting BaaS Bots Weekly
+name: schedule Us
 
 on:
   schedule:
@@ -65,8 +65,9 @@ jobs:
           echo "Selected meeting schedule: $SELECTED_DAY"
 
           BOT_NAMES=(
-            "22 Shahul"
-            "23 Haseeb"
+            "23 Maswood Akram"
+            "23 Naeem Kodaganur"
+            "23 Zainuddin"
           )
 
           for BOT_NAME in "${BOT_NAMES[@]}"; do
