@@ -1,4 +1,4 @@
-name: Schedule Multiple Meeting BaaS Bots Weekly
+name: Schedule Others
 
 on:
   schedule:
