@@ -1,9 +1,9 @@
-name: Schedule Multiple Recall Bots Weekly
+name: Schedule Multiple Meeting BaaS Bots Weekly
 
 on:
   schedule:
-    - cron: '0 9 * * 2'   # Tuesday, 3:00 PM Osh time
-    - cron: '40 6 * * 6'  # Saturday, 12:40 PM Osh time
+    - cron: '45 8 * * 2'  # Tuesday, 2:45 PM Osh time
+    - cron: '20 6 * * 6'  # Saturday, 12:20 PM Osh time
 
   workflow_dispatch:
     inputs:
@@ -20,9 +20,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Create Meeting Bots
+      - name: Create Meeting BaaS Bots
         env:
-          RECALLAI_API_KEY: ${{ secrets.RECALLAI_API_KEY }}
+          MEETINGBAAS_API_KEY: ${{ secrets.RECALLAI_API_KEY }}
           TUESDAY_MEETING_URL: ${{ secrets.MEETING_URL }}
           SATURDAY_MEETING_URL: ${{ secrets.SATURDAY_MEETING_URL }}
           EVENT_NAME: ${{ github.event_name }}
@@ -31,12 +31,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ -z "$RECALLAI_API_KEY" ]]; then
-            echo "ERROR: RECALLAI_API_KEY secret is missing."
+          if [[ -z "$MEETINGBAAS_API_KEY" ]]; then
+            echo "ERROR: MEETINGBAAS_API_KEY secret is missing."
             exit 1
           fi
 
-          # Select the correct meeting URL.
+          # Select the correct meeting.
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             SELECTED_DAY="$MEETING_DAY"
           elif [[ "$(date -u +%u)" == "2" ]]; then
@@ -45,7 +45,6 @@ jobs:
             SELECTED_DAY="Saturday"
           else
             echo "ERROR: Unexpected scheduled day."
-            echo "For manual runs, select Tuesday or Saturday."
             exit 1
           fi
 
@@ -79,11 +78,13 @@ jobs:
               '{
                 meeting_url: $meeting_url,
                 bot_name: $bot_name,
-                recording_config: null,
-                automatic_leave: {
+                recording_mode: "audio_only",
+                transcription_enabled: false,
+                timeout_config: {
                   waiting_room_timeout: 1800,
-                  noone_joined_timeout: 1800,
-                  in_call_not_recording_timeout: 14400
+                  no_one_joined_timeout: 1800,
+                  silence_timeout: 3600,
+                  max_recording_duration: 43200
                 }
               }' > request.json
 
@@ -93,10 +94,9 @@ jobs:
               --output response.json \
               --write-out "%{http_code}" \
               --request POST \
-              "https://us-west-2.recall.ai/api/v1/bot/" \
-              --header "Authorization: Token $RECALLAI_API_KEY" \
+              "https://api.meetingbaas.com/v2/bots" \
+              --header "x-meeting-baas-api-key: $MEETINGBAAS_API_KEY" \
               --header "Content-Type: application/json" \
-              --header "Accept: application/json" \
               --data @request.json) || {
                 echo "ERROR: HTTP request failed."
                 exit 1
@@ -111,4 +111,5 @@ jobs:
             fi
 
             echo "Bot created successfully: $BOT_NAME"
+            jq -r '.data.bot_id // "Bot ID not returned"' response.json
           done
