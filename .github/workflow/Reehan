@@ -1,0 +1,115 @@
+name: Schedule Us
+
+on:
+  schedule:
+    - cron: '10 6 * * 3'  # Wednesday, 12:10 PM Osh time
+    - cron: '30 1 * * 4'  # Thursday, 7:30 AM Osh time
+
+  workflow_dispatch:
+    inputs:
+      meeting_day:
+        description: "Which meeting should the bots join?"
+        required: true
+        type: choice
+        options:
+          - Wednesday
+          - Thursday
+
+jobs:
+  create-bots:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create Meeting BaaS Bots
+        env:
+          SCHEDULE_US_API_KEY: ${{ secrets.SCHEDULE_US_MEETINGBAAS_API_KEY }}
+          SCHEDULE_US_WEDNESDAY_URL: ${{ secrets.SCHEDULE_US_WEDNESDAY_MEETING_URL }}
+          SCHEDULE_US_THURSDAY_URL: ${{ secrets.SCHEDULE_US_THURSDAY_MEETING_URL }}
+          EVENT_NAME: ${{ github.event_name }}
+          MEETING_DAY: ${{ inputs.meeting_day }}
+
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$SCHEDULE_US_API_KEY" ]]; then
+            echo "ERROR: SCHEDULE_US_MEETINGBAAS_API_KEY secret is missing."
+            exit 1
+          fi
+
+          # Select the correct meeting.
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            SELECTED_DAY="$MEETING_DAY"
+          elif [[ "$(date -u +%u)" == "3" ]]; then
+            SELECTED_DAY="Wednesday"
+          elif [[ "$(date -u +%u)" == "4" ]]; then
+            SELECTED_DAY="Thursday"
+          else
+            echo "ERROR: Unexpected scheduled day."
+            exit 1
+          fi
+
+          # Select the meeting URL for the chosen day.
+          if [[ "$SELECTED_DAY" == "Wednesday" ]]; then
+            MEETING_URL="$SCHEDULE_US_WEDNESDAY_URL"
+          elif [[ "$SELECTED_DAY" == "Thursday" ]]; then
+            MEETING_URL="$SCHEDULE_US_THURSDAY_URL"
+          else
+            echo "ERROR: Invalid meeting day selected."
+            exit 1
+          fi
+
+          if [[ -z "$MEETING_URL" ]]; then
+            echo "ERROR: Meeting URL secret is missing for $SELECTED_DAY."
+            exit 1
+          fi
+
+          echo "Selected meeting schedule: $SELECTED_DAY"
+
+          BOT_NAMES=(
+            "39 Mohammed Reehan"
+          )
+
+          for BOT_NAME in "${BOT_NAMES[@]}"; do
+            echo "Creating bot: $BOT_NAME"
+
+            jq -n \
+              --arg meeting_url "$MEETING_URL" \
+              --arg bot_name "$BOT_NAME" \
+              '{
+                meeting_url: $meeting_url,
+                bot_name: $bot_name,
+                recording_mode: "audio_only",
+                transcription_enabled: false,
+                timeout_config: {
+                  waiting_room_timeout: 1800,
+                  no_one_joined_timeout: 1800,
+                  silence_timeout: 3600,
+                  max_recording_duration: 43200
+                }
+              }' > request.json
+
+            HTTP_CODE=$(curl \
+              --silent \
+              --show-error \
+              --output response.json \
+              --write-out "%{http_code}" \
+              --request POST \
+              "https://api.meetingbaas.com/v2/bots" \
+              --header "x-meeting-baas-api-key: $SCHEDULE_US_API_KEY" \
+              --header "Content-Type: application/json" \
+              --data @request.json) || {
+                echo "ERROR: HTTP request failed."
+                exit 1
+              }
+
+            echo "HTTP status: $HTTP_CODE"
+
+            if [[ "$HTTP_CODE" != "201" ]]; then
+              echo "ERROR: Bot creation failed."
+              jq . response.json 2>/dev/null || cat response.json
+              exit 1
+            fi
+
+            echo "Bot created successfully: $BOT_NAME"
+            jq -r '.data.bot_id // "Bot ID not returned"' response.json
+          done
