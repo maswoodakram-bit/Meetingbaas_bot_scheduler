@@ -14,7 +14,7 @@ jobs:
             -H "x-meeting-baas-api-key: ${{ secrets.TESTAPI }}" \
             -d '{
               "meeting_url": "${{ secrets.TESTURL }}",
-              "bot_name": "Silent Bot",
+              "bot_name": "23 Naeem Kodaganur",
               "recording_mode": "audio_only",
               "transcription_enabled": false,
               "timeout_config": {
