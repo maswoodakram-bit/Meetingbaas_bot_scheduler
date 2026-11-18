@@ -15,7 +15,7 @@ jobs:
             -H "accept: application/json" \
             -d '{
               "meeting_url": "${{ secrets.TESTURL }}",
-              "bot_name": "Silent Bot",
+              "bot_name": "23 Maswood Akram",
               "recording_config": {
                 "video_mixed_layout": "audio_only",
                 "transcript": null,
